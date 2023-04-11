@@ -46,7 +46,7 @@ class Parse:
             i += 1
             if ins.attrib['opcode'] not in opcodes:
                 exitMessage(ec.INVALID_XML, "Invalid oppcode")
-            if ins.attrib['order'].isdigit() is False:
+            if ins.attrib['order'].isdigit() is False or int(ins.attrib['order']) == 0:
                 exitMessage(ec.INVALID_XML, "Invalid order")
 
             arg1 = ins.findall('arg1')
@@ -73,7 +73,8 @@ class Parse:
                 else:
                     self.instructions.append([i, ins.attrib['opcode'], 
                                               arg1.attrib['type'], arg1.text.strip()])
-
+            else:
+                self.instructions.append([i, ins.attrib['opcode']])
 
         return self.instructions
 
