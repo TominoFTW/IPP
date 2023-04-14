@@ -20,5 +20,13 @@ class ErrorCodes(Enum):
 
 def exitMessage(errorC, errorM: str = ""):
     """Prints error message and exits with error code"""
-    print(errorM, file=sys.stderr)
-    exit(errorC.value)
+    if errorM == "EXIT":
+        if errorC is None:
+            exitMessage(ErrorCodes.MISSING_VALUE, "Missing value error(none)")
+        elif int(errorC) in range(0, 50):
+            exit(int(errorC))
+        else:
+            exitMessage(ErrorCodes.INVALID_VALUE, "Invalid value error")
+    else:
+        print(errorM, file=sys.stderr)
+        exit(errorC.value)

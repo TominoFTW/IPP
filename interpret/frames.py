@@ -32,6 +32,8 @@ class Frame:
                     self.frame[var] = (value, Nil())
                 elif type(value) == type(bool()) or value == 'true' or value == 'false':
                     self.frame[var] = (value, type(bool()))
+                elif type(value) == type(float()):
+                    exitMessage(ec.INVALID_XML, "Invalid operand type")
                 else:
                     self.frame[var] = (value, type(value))
             else:
@@ -40,9 +42,9 @@ class Frame:
         def set_var_type(self, var, value, typ):
             if var in self.frame.keys():
                 if typ == 'int':
-                    self.frame[var] = (value, type(int()))
+                    self.frame[var] = (int(value), type(int()))
                 elif typ == 'bool':
-                    self.frame[var] = (value, type(bool()))
+                    self.frame[var] = (value.lower(), type(bool()))
                 elif typ == 'string':
                     self.frame[var] = (value, type(str()))
                 elif typ == 'nil':
@@ -60,6 +62,8 @@ class Frame:
         
         def get_var_value(self, var):
             if var in self.frame.keys():
+                if self.frame[var][0] == None:
+                    exitMessage(ec.MISSING_VALUE, "Variable doesn't exist")
                 return self.frame[var][0]
             else:
                 exitMessage(ec.INVALID_VARIABLE, "Variable doesn't exist")
@@ -78,6 +82,12 @@ class Frame:
                     return 'string'
                 elif type(self.frame[var][1]) == type(Nil()):
                     return 'nil'
+                elif type(self.frame[var][1]) == type(bool()):
+                    return 'bool'
+                elif type(self.frame[var][1]) == type(int()):
+                    return 'int'
+                elif self.frame[var][1] == type(None):
+                    return type(None)
                 else:
                     return self.frame[var][1].__name__
             else:
@@ -90,7 +100,11 @@ class Frame:
             print(self.frame)
 
         def write_var(self, var):
-            if self.get_var_type(var) != type(None):
+            if self.get_var_value(var) == type(None):
+                pass
+            elif self.get_var_type(var) == type(Nil()):
+                pass
+            elif self.get_var_type(var) != type(None):
                 print(self.get_var_value(var), end='')
             else:
                 exitMessage(ec.MISSING_VALUE, "Variable doesn't exist")
