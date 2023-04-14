@@ -3,7 +3,7 @@ from errorCodes import ErrorCodes as ec, exitMessage
 import sys
 
 
-class arguments:
+class parseArguments:
     def __init__(self):
         self.args = None
 
@@ -66,4 +66,4 @@ class arguments:
         return self.args
 
 if __name__ == '__main__':
-    arguments()
+    parseArguments()

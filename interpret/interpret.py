@@ -4,29 +4,22 @@ import sys
 from errorCodes import ErrorCodes as ec, exitMessage
 from xmlparse import Parse
 from frames import Frame
+from instructions import *
+from run import Run
+
 
 
 
 
 class Main:
     def __init__(self):
-        self.args = arguments()
-        args = self.args.getArgs()
+        self.lineArgs = parseArguments()
+        lineArgs = self.lineArgs.getArgs()
 
         self.XML = Parse()
-        instructions = self.XML.parse(args.source)
-        
-        for instruction in instructions:
-            print(instruction)
-
-        self.t_frame = None
-        self.g_frame = Frame()
-        self.l_frame = []
-        self.data_stack = []
-        self.call_stack = []
-        self.labels = {}
+        instructions = [Instruction(instruction) for instruction in self.XML.parse(lineArgs.source)]
+            
+        self.run = Run(instructions, lineArgs)
 
 if __name__ == '__main__':
     Main()
-
-# sorted metoda nekde u xml knihovny
