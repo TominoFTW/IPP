@@ -101,19 +101,20 @@ class Parse:
                         arg3 = arg3[0]
                         try:
                             self.instructions.append([i, ins.attrib['opcode'],
-                                                      arg1.attrib['type'], arg1.text,
-                                                      arg2.attrib['type'], arg2.text,
-                                                      arg3.attrib['type'], arg3.text])
+                                                      arg1.attrib['type'], arg1.text.strip() if not arg1.text is None else None,
+                                                      arg2.attrib['type'], arg2.text.strip() if not arg2.text is None else None,
+                                                      arg3.attrib['type'], arg3.text.strip() if not arg3.text is None else None])
                         except:
-                            print(xml)
-                            exitMessage(ec.INVALID_XML)
+                            print(i, ins.attrib['opcode'], arg1.attrib['type'])
+                            # print(xml)
+                            # exitMessage(ec.INVALID_XML)
                     else:
                         self.instructions.append([i, ins.attrib['opcode'],
-                                                  arg1.attrib['type'], arg1.text,
-                                                  arg2.attrib['type'], arg2.text])
+                                                  arg1.attrib['type'], arg1.text.strip() if not arg1.text is None else None,
+                                                  arg2.attrib['type'], arg2.text.strip() if not arg2.text is None else None])
                 else:
                     self.instructions.append([i, ins.attrib['opcode'],
-                                              arg1.attrib['type'], arg1.text])
+                                              arg1.attrib['type'], arg1.text.strip() if not arg1.text is None else None])
             else:
                 self.instructions.append([i, ins.attrib['opcode']])
 

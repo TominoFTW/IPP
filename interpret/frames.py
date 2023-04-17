@@ -100,9 +100,10 @@ class Frame:
             print(self.frame)
 
         def write_var(self, var):
+            # print("~~~~~~~~~~~~~~~~~~~~~~~~~~",self.get_var_type_str(var),type(Nil()))
             if self.get_var_value(var) == type(None):
                 pass
-            elif self.get_var_type(var) == type(Nil()):
+            elif self.get_var_type_str(var) == 'nil':
                 pass
             elif self.get_var_type(var) != type(None):
                 print(self.get_var_value(var), end='')
