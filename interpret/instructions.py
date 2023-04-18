@@ -64,7 +64,7 @@ class Argument(Instruction):
         self.name = None
         self.type = arg_type
         self.value = arg_value
-        if arg_type == 'string':
+        if arg_type == 'string' and arg_value != None:
             self.value = re.sub(r'\\([0-9]{3})', lambda x: chr(int(x.group(1))), str(arg_value))
 
     def get_arg(self):
