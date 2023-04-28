@@ -1,9 +1,10 @@
 from errorCodes import ErrorCodes as ec, exitMessage
 
+
 class Nil:
     def __init__(self):
         pass
-    
+
     def __name__(self):
         return 'nil'
 
@@ -24,7 +25,6 @@ class Frame:
                 self.frame[var] = (None, type(None))
             else:
                 exitMessage(ec.SEMANTIC_ERROR, "Variable already exists")
-                
 
         def set_var(self, var, value):
             if var in self.frame.keys():
@@ -53,13 +53,13 @@ class Frame:
                     self.frame[var] = (value, typ)
             else:
                 exitMessage(ec.INVALID_VARIABLE, "Variable doesn't exist")
-            
+
         def get_var(self, var):
             if var in self.frame.keys():
                 return self.frame[var]
             else:
                 exitMessage(ec.INVALID_VARIABLE, "Variable doesn't exist")
-        
+
         def get_var_value(self, var):
             if var in self.frame.keys():
                 if self.frame[var][0] == None:
@@ -67,7 +67,7 @@ class Frame:
                 return self.frame[var][0]
             else:
                 exitMessage(ec.INVALID_VARIABLE, "Variable doesn't exist")
-        
+
         def get_var_type(self, var):
             if var in self.frame.keys():
                 return self.frame[var][1]
@@ -95,7 +95,6 @@ class Frame:
                 # print(self.frame.keys(),var)
                 exitMessage(ec.INVALID_VARIABLE, "Variable doesn't exist")
 
-
         def write_frame(self):
             print(self.frame)
 
@@ -112,4 +111,3 @@ class Frame:
 
     except AttributeError:
         exitMessage(ec.INTERNAL_ERROR, "Invalid fasdsdrame")
-    

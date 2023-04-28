@@ -59,7 +59,7 @@ class Instruction:
         return len(self.args)
     
     
-class Argument(Instruction):
+class Argument():
     def __init__(self, arg_type, arg_value):
         self.name = None
         self.type = arg_type

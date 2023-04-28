@@ -1,6 +1,7 @@
 from enum import Enum
 import sys
 
+
 class ErrorCodes(Enum):
     """Enum class for error codes"""
     OK = 0
@@ -9,7 +10,7 @@ class ErrorCodes(Enum):
     OUTPUT_FILE_ERROR = 12
     MALFORMED_XML = 31
     INVALID_XML = 32
-    SEMANTIC_ERROR = 52 
+    SEMANTIC_ERROR = 52
     INVALID_OPERAND_TYPE = 53
     INVALID_VARIABLE = 54
     INVALID_FRAME = 55
@@ -17,6 +18,7 @@ class ErrorCodes(Enum):
     INVALID_VALUE = 57
     INVALID_STRING = 58
     INTERNAL_ERROR = 99
+
 
 def exitMessage(errorC, errorM: str = ""):
     """Prints error message and exits with error code"""

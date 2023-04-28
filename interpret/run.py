@@ -17,11 +17,9 @@ class Run:
         self.data_stack = []
         self.call_stack = []
         self.instruction_pointer = 0
-        self.order = 1
 
         self.labels = {}
 
-        self.VAR = ['var']
         self.SYMB = ['var', 'int', 'bool', 'string', 'nil', 'var']
         self.LABEL = ['label']
         self.TYPE = ['int', 'bool', 'string', 'nil']
@@ -42,21 +40,10 @@ class Run:
 
     def run(self):
         while (self.instruction_pointer < len(self.instructions)):
-            # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            # for i in range(len(self.instructions)):
-            #     sys.stderr.write(str(i) + " " + self.instructions[i].opcode + "\n")
-            # if self.instruction_pointer == 6:
-            #     exitMessage(ec.SEMANTIC_ERROR, "Unluckyasdasdsadasdasdasasdasdasdasd")
             try:
-                # sys.stderr.write(str(self.instruction_pointer+1) + " " + self.instructions[self.instruction_pointer].opcode + "\n")
                 instruction = self.instructions[self.instruction_pointer]
             except:
-                exitMessage(ec.INTERNAL_ERROR, "Unluckyasdasdasdasdasd")
-            # try:
-            #     print("starting ",self.instruction_pointer, self.instructions[self.instruction_pointer].opcode, self.instructions[self.instruction_pointer].args[0].value)
-            # except:
-            #     exitMessage(ec.SEMANTIC_ERROR, "Unlucky")
-            #     print("starting ",self.instruction_pointer, self.instructions[self.instruction_pointer].opcode)
+                exitMessage(ec.INTERNAL_ERROR)
             if instruction.opcode == "MOVE":
                 self._move(instruction)
             elif instruction.opcode == "CREATEFRAME":
@@ -102,9 +89,7 @@ class Run:
             elif instruction.opcode == "READ":
                 self._read(instruction, self.lineArgs.input)
             elif instruction.opcode == "WRITE":
-                # print(">>>", end=" ")
                 self._write(instruction)
-                # print(" <<<")
             elif instruction.opcode == "CONCAT":
                 self._concat(instruction)
             elif instruction.opcode == "STRLEN":
@@ -132,12 +117,7 @@ class Run:
             else:
                 exitMessage(ec.INVALID_XML, "Invalid oppcode")
 
-            # print("",self.instruction_pointer+1,"___",end=" ")
-            # print(self.g_frame.get_frame())
-            # print(self.call_stack,"\n")
             self.instruction_pointer += 1
-            # print("\nNEXT POINTER",self.instruction_pointer+1,"___",end=" ")
-            # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
 
     def _move(self, instruction):
@@ -148,25 +128,27 @@ class Run:
                         frame2, name2 = self.args[1].value.split('@', 1)
                         if frame2 == 'GF':
                             val = self.g_frame.get_var_value(name2)
-                            type = self.g_frame.get_var_type(name2)
+                            typ = self.g_frame.get_var_type(name2)
                         elif frame2 == 'TF':
                             val = self.t_frame.get_var_value(name2)
-                            type = self.t_frame.get_var_type(name2)
+                            typ = self.t_frame.get_var_type(name2)
                         elif frame2 == 'LF':
                             val = self.l_frame[-1].get_var_value(name2)
-                            type = self.l_frame[-1].get_var_type(name2)
+                            typ = self.l_frame[-1].get_var_type(name2)
                         else:
                             exitMessage(ec.INVALID_XML, "Invalid frame")
                 else:   # var (int, bool, string, nil)
                     val = self.args[1].value
-                    type = self.args[1].type
+                    typ = self.args[1].type
+                if val == None and typ == 'string':
+                    val = ''
                 frame, name = self.args[0].value.split('@', 1)
                 if frame == 'GF':
-                    self.g_frame.set_var_type(name, val, type)
+                    self.g_frame.set_var_type(name, val, typ)
                 elif frame == 'TF':
-                    self.t_frame.set_var_type(name, val, type)
+                    self.t_frame.set_var_type(name, val, typ)
                 elif frame == 'LF':
-                    self.l_frame[-1].set_var_type(name, val, type)
+                    self.l_frame[-1].set_var_type(name, val, typ)
                 else:
                     exitMessage(ec.INVALID_XML, "Invalid frame")
                     
@@ -210,18 +192,20 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invalid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _call(self, instruction):
         self.args = instruction.args
         if self.args[0].type == 'label':
             try:
-                self.call_stack.append(self.instruction_pointer + 1)
+                if self.args[0].value not in self.labels.keys():
+                    exitMessage(ec.SEMANTIC_ERROR, "Label not found")
+                self.call_stack.append(self.instruction_pointer)
                 self.instruction_pointer = self.labels[self.args[0].value]
             except KeyError:
                 exitMessage(ec.INVALID_XML, "Invalid label")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _return(self, instruction):
         try:
@@ -235,11 +219,11 @@ class Run:
                 try:
                     frame, name = instruction.args[0].value.split('@', 1)
                     if frame == 'GF':
-                        self.data_stack.append(self.g_frame.get_var_value(name))
+                        self.data_stack.append((self.g_frame.get_var_value(name), self.g_frame.get_var_type_str(name)))
                     elif frame == 'TF':
-                        self.data_stack.append(self.t_frame.get_var_value(name))
+                        self.data_stack.append((self.t_frame.get_var_value(name), self.t_frame.get_var_type_str(name)))
                     elif frame == 'LF':
-                        self.data_stack.append(self.l_frame[-1].get_var_value(name))
+                        self.data_stack.append((self.l_frame[-1].get_var_value(name), self.l_frame[-1].get_var_type_str(name)))
                     else:
                         exitMessage(ec.INVALID_XML, "Invalid frame")
                 except IndexError:
@@ -247,26 +231,39 @@ class Run:
                 except AttributeError:
                     exitMessage(ec.INVALID_FRAME, "Invalid frame")
             else:
-                self.data_stack.append(instruction.args[0])
+                try:
+                    if instruction.args[0].value == None and instruction.args[0].type == 'string':
+                        self.data_stack.append(('',instruction.args[0].type))
+                    elif instruction.args[0].type == 'int':
+                        self.data_stack.append((int(instruction.args[0].value), instruction.args[0].type))
+                    elif instruction.args[0].type == 'bool':
+                        self.data_stack.append((instruction.args[0].value.lower(), instruction.args[0].type))
+                    else:
+                        self.data_stack.append((instruction.args[0].value,instruction.args[0].type))
+                except ValueError:
+                    exitMessage(ec.INVALID_XML, "Invalid XML things")
+        else:
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _pops(self, instruction):
         if not self.data_stack:
             exitMessage(ec.MISSING_VALUE, "Invalid argument type")
         if instruction.args[0].type == 'var':
+            value, typ = self.data_stack.pop()
             try:
                 frame, name = instruction.args[0].value.split('@', 1)
                 if frame == 'GF':
-                    self.g_frame.set_var(name, self.data_stack.pop().value)
+                    self.g_frame.set_var_type(name, value, typ)
                 elif frame == 'TF':
-                    self.t_frame.set_var(name, self.data_stack.pop().value)
+                    self.t_frame.set_var_type(name, value, typ)
                 elif frame == 'LF':
-                    self.l_frame[-1].set_var(name, self.data_stack.pop().value)
+                    self.l_frame[-1].set_var_type(name, value, typ)
                 else:
                     exitMessage(ec.INVALID_XML, "Invalid frame")
-            except IndexError:
-                exitMessage(ec.INVALID_FRAME, "Invalid frame")
-            except AttributeError:
-                exitMessage(ec.INVALID_FRAME, "Invalid frame")
+            except IndexError as e:
+                exitMessage(ec.INVALID_FRAME, e)
+            except AttributeError as e:
+                exitMessage(ec.INVALID_FRAME, e)
 
     def _add(self, instruction):
         self.args = instruction.args
@@ -286,7 +283,7 @@ class Run:
                     try:
                         val1 = int(self.args[1].value)
                     except ValueError:
-                        exitMessage(ec.INVALID_XML, "Invalid argument type")
+                        exitMessage(ec.INVALID_XML, "Invalid XML things")
                 else:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
 
@@ -305,10 +302,12 @@ class Run:
                     try:
                         val2 = int(self.args[2].value)
                     except ValueError:
-                        exitMessage(ec.INVALID_XML, "Invalid argument type")
+                        exitMessage(ec.INVALID_XML, "Invalid XML things")
                 else:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
 
+                if type(val1) != type(int()) or type(val2) != type(int()):
+                    exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
                 if val1 is None or val2 is None:
                     exitMessage(ec.MISSING_VALUE, "Invalid argument type")
                     
@@ -326,7 +325,7 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invalid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _sub(self, instruction):
         self.args = instruction.args
@@ -359,11 +358,12 @@ class Run:
                     else:
                         exitMessage(ec.INVALID_XML, "Invalid frame")
                 elif self.args[2].type == 'int': 
-                    # print("tu2")
                     val2 = int(self.args[2].value)
                 else:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
 
+                if type(val1) != type(int()) or type(val2) != type(int()):
+                    exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
                 if val1 is None or val2 is None:
                     exitMessage(ec.MISSING_VALUE, "Invalid argument type")
 
@@ -381,7 +381,7 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invalid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _mul(self, instruction):
         self.args = instruction.args
@@ -414,11 +414,12 @@ class Run:
                     else:
                         exitMessage(ec.INVALID_XML, "Invalid frame")
                 elif self.args[2].type == 'int': 
-                    # print("tu2")
                     val2 = int(self.args[2].value)
                 else:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
 
+                if type(val1) != type(int()) or type(val2) != type(int()):
+                    exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
                 if val1 is None or val2 is None:
                     exitMessage(ec.MISSING_VALUE, "Invalid argument type")        
                     
@@ -436,7 +437,7 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invalid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
             
     def _idiv(self, instruction):
         self.args = instruction.args
@@ -472,6 +473,8 @@ class Run:
                 else:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
 
+                if type(val1) != type(int()) or type(val2) != type(int()):
+                    exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
                 if val1 is None or val2 is None:
                     exitMessage(ec.MISSING_VALUE, "Invalid argument type")
                 elif val2 == 0:
@@ -491,28 +494,33 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invalid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _lt(self, instruction):
         self.args = instruction.args
         if self.args[0].type == 'var' and self.args[1].type in self.SYMB and self.args[2].type in self.SYMB:
             try:
-                val1_t, val2_t = None, None
                 if self.args[1].type == 'var':
                     frame1, name1 = self.args[1].value.split('@', 1)
                     if frame1 == 'GF':
                         val1 = self.g_frame.get_var_value(name1)
+                        typ1 = self.g_frame.get_var_type_str(name1)
                     elif frame1 == 'TF':
                         val1 = self.t_frame.get_var_value(name1)
+                        typ1 = self.t_frame.get_var_type_str(name1)
                     elif frame1 == 'LF':
                         val1 = self.l_frame[-1].get_var_value(name1)
+                        typ1 = self.l_frame[-1].get_var_type_str(name1)
                     else:
                         exitMessage(ec.INVALID_XML, "Invalid frame")
+                    if typ1 == 'nil':
+                        exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
                 elif self.args[1].type == 'int':
                     val1 = int(self.args[1].value)
+                    typ1 = self.args[1].type
                 elif self.args[1].type in ['bool', 'string']:
                     val1 = self.args[1].value
-                    val1_t = self.args[1].type
+                    typ1 = self.args[1].type
                 else:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
                 
@@ -520,23 +528,32 @@ class Run:
                     frame2, name2 = self.args[2].value.split('@', 1)
                     if frame2 == 'GF':
                         val2 = self.g_frame.get_var_value(name2)
+                        typ2 = self.g_frame.get_var_type_str(name2)
                     elif frame2 == 'TF':
                         val2 = self.t_frame.get_var_value(name2)
+                        typ2 = self.t_frame.get_var_type_str(name2)
                     elif frame2 == 'LF':
                         val2 = self.l_frame[-1].get_var_value(name2)
+                        typ2 = self.l_frame[-1].get_var_type_str(name2)
                     else:
                         exitMessage(ec.INVALID_XML, "Invalid frame")
+                    if typ2 == 'nil':
+                        exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
                 elif self.args[2].type == 'int':
                     val2 = int(self.args[2].value)
+                    typ2 = self.args[2].type
                 elif self.args[2].type in ['bool', 'string']:
                     val2 = self.args[2].value
-                    val2_t = self.args[2].type
+                    typ2 = self.args[2].type
                 else:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
 
                 if val1 is None or val2 is None:
-                    exitMessage(ec.MISSING_VALUE, "Invalid argument type")
-                elif val1_t != val2_t:
+                    if val1 is None:
+                        val1=''
+                    if val2 is None:
+                        val2=''
+                elif typ1 != typ2:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
 
                 if val1 < val2:
@@ -562,28 +579,33 @@ class Run:
             except TypeError:
                 exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _gt(self, instruction):
         self.args = instruction.args
         if self.args[0].type == 'var' and self.args[1].type in self.SYMB and self.args[2].type in self.SYMB:
             try:
-                val1_t, val2_t = None, None
                 if self.args[1].type == 'var':
                     frame1, name1 = self.args[1].value.split('@', 1)
                     if frame1 == 'GF':
                         val1 = self.g_frame.get_var_value(name1)
+                        typ1 = self.g_frame.get_var_type_str(name1)
                     elif frame1 == 'TF':
                         val1 = self.t_frame.get_var_value(name1)
+                        typ1 = self.t_frame.get_var_type_str(name1)
                     elif frame1 == 'LF':
                         val1 = self.l_frame[-1].get_var_value(name1)
+                        typ1 = self.l_frame[-1].get_var_type_str(name1)
                     else:
                         exitMessage(ec.INVALID_XML, "Invalid frame")
+                    if typ1 == 'nil':
+                        exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
                 elif self.args[1].type == 'int':
                     val1 = int(self.args[1].value)
+                    typ1 = self.args[1].type
                 elif self.args[1].type in ['bool', 'string']:
                     val1 = self.args[1].value
-                    val1_t = self.args[1].type
+                    typ1 = self.args[1].type
                 else:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
                 
@@ -591,23 +613,32 @@ class Run:
                     frame2, name2 = self.args[2].value.split('@', 1)
                     if frame2 == 'GF':
                         val2 = self.g_frame.get_var_value(name2)
+                        typ2 = self.g_frame.get_var_type_str(name2)
                     elif frame2 == 'TF':
                         val2 = self.t_frame.get_var_value(name2)
+                        typ2 = self.t_frame.get_var_type_str(name2)
                     elif frame2 == 'LF':
                         val2 = self.l_frame[-1].get_var_value(name2)
+                        typ2 = self.l_frame[-1].get_var_type_str(name2)
                     else:
                         exitMessage(ec.INVALID_XML, "Invalid frame")
+                    if typ2 == 'nil':
+                        exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
                 elif self.args[2].type == 'int':
                     val2 = int(self.args[2].value)
+                    typ2 = self.args[2].type
                 elif self.args[2].type in ['bool', 'string']:
                     val2 = self.args[2].value
-                    val2_t = self.args[2].type
+                    typ2 = self.args[2].type
                 else:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
 
                 if val1 is None or val2 is None:
-                    exitMessage(ec.MISSING_VALUE, "Invalid argument type")
-                elif val1_t != val2_t:
+                    if val1 is None:
+                        val1=''
+                    if val2 is None:
+                        val2=''
+                elif typ1 != typ2:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
 
                 if val1 > val2:
@@ -633,51 +664,57 @@ class Run:
             except TypeError:
                 exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _eq(self, instruction):
         self.args = instruction.args
         if self.args[0].type == 'var' and self.args[1].type in self.SYMB and self.args[2].type in self.SYMB:
             try:
-                val1_t, val2_t = None, None
                 if self.args[1].type == 'var':
                     frame1, name1 = self.args[1].value.split('@', 1)
                     if frame1 == 'GF':
                         val1 = self.g_frame.get_var_value(name1)
+                        typ1 = self.g_frame.get_var_type_str(name1)
                     elif frame1 == 'TF':
                         val1 = self.t_frame.get_var_value(name1)
+                        typ1 = self.t_frame.get_var_type_str(name1)
                     elif frame1 == 'LF':
                         val1 = self.l_frame[-1].get_var_value(name1)
+                        typ1 = self.l_frame[-1].get_var_type_str(name1)
                     else:
                         exitMessage(ec.INVALID_XML, "Invalid frame")
                 elif self.args[1].type == 'int':
                     val1 = int(self.args[1].value)
-                    val1_t = self.args[1].type
+                    typ1 = self.args[1].type
                 else:
                     val1 = self.args[1].value
-                    val1_t = self.args[1].type
+                    typ1 = self.args[1].type
                 
                 if self.args[2].type == 'var':
                     frame2, name2 = self.args[2].value.split('@', 1)
                     if frame2 == 'GF':
                         val2 = self.g_frame.get_var_value(name2)
+                        typ2 = self.g_frame.get_var_type_str(name2)
                     elif frame2 == 'TF':
                         val2 = self.t_frame.get_var_value(name2)
+                        typ2 = self.t_frame.get_var_type_str(name2)
                     elif frame2 == 'LF':
                         val2 = self.l_frame[-1].get_var_value(name2)
+                        typ2 = self.l_frame[-1].get_var_type_str(name2)
                     else:
                         exitMessage(ec.INVALID_XML, "Invalid frame")
                 elif self.args[2].type == 'int':
                     val2 = int(self.args[2].value)
-                    val2_t = self.args[2].type
+                    typ2 = self.args[2].type
                 else:
                     val2 = self.args[2].value
-                    val2_t = self.args[2].type
-
-                # print("~~~~~~~~~~~~", val1, val2, val1_t, val2_t, "~~~~~~~~~~~~~~~")
+                    typ2 = self.args[2].type
                 if val1 is None or val2 is None:
-                    exitMessage(ec.MISSING_VALUE, "Invalid argument type")
-                elif val1_t in ['string', 'bool', 'int'] and val2_t in ['string', 'bool', 'int'] and val1_t != val2_t:
+                    if val1 is None:
+                        val1=''
+                    if val2 is None:
+                        val2=''
+                elif typ1 in ['string', 'bool', 'int'] and typ2 in ['string', 'bool', 'int'] and typ1 != typ2:
                     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
 
                 if val1 == val2:
@@ -703,7 +740,7 @@ class Run:
             except TypeError:
                 exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _and(self, instruction):
         self.args = instruction.args
@@ -784,7 +821,7 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invaslid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _or(self, instruction):
         self.args = instruction.args
@@ -865,7 +902,7 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invaslid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _not(self, instruction):
         self.args = instruction.args
@@ -921,7 +958,7 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invaslid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _int2char(self, instruction):
         self.args = instruction.args
@@ -934,25 +971,25 @@ class Run:
                         if val1 is None:
                             exitMessage(ec.MISSING_VALUE, "Invalid argument type")
                         if self.g_frame.get_var_type_str(name1) != 'int':
-                            exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
+                            exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argsdasdasdsaument type")
                     elif frame1 == 'TF':
                         val1 = self.t_frame.get_var_value(name1)
                         if val1 is None:
                             exitMessage(ec.MISSING_VALUE, "Invalid argument type")
                         if self.t_frame.get_var_type_str(name1) != 'int':
-                            exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
+                            exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argumeaddfgjnt type")
                     elif frame1 == 'LF':
                         val1 = self.l_frame[-1].get_var_value(name1)
                         if val1 is None:
                             exitMessage(ec.MISSING_VALUE, "Invalid argument type")
                         if self.l_frame[-1].get_var_type_str(name1) != 'int':
-                            exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
+                            exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid arg345345ument type")
                     else:
                         exitMessage(ec.INVALID_XML, "Invalid frame")
                 elif self.args[1].type == 'int':
                     val1 = self.args[1].value
                 else:
-                    exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
+                    exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argumesdsnt type")
 
                 if val1 is None:
                     exitMessage(ec.MISSING_VALUE, "Invalid argument type")
@@ -976,9 +1013,10 @@ class Run:
             except IndexError:
                 exitMessage(ec.INVALID_FRAME, "Invalid frame")
             except AttributeError:
-                exitMessage(ec.INVALID_FRAME, "Invaslid frame")
+                exitMessage(ec.INVALID_FRAME, "Invalid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
+
 
 
     def _stri2int(self, instruction):
@@ -1066,12 +1104,11 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invalid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _read(self, instruction, inputfile):
         self.args = instruction.args
         val = inputfile.readline()
-        # print("READ:~~~~~",val,"~~",len(val),"~~",sep='')
         if val == '\n':
             val = ''
         elif val == '':
@@ -1084,12 +1121,9 @@ class Run:
                 pass
             elif self.args[1].value == 'int':
                 try:
-                    # print(type(val))
-                    # print("____",val)
                     val = int(val)
                     typ = 'int'
                 except ValueError:
-                    # print("error")
                     val = 'nil'
                     typ = 'nil'
             elif self.args[1].value == 'bool':
@@ -1101,7 +1135,7 @@ class Run:
             elif self.args[1].value == 'string':
                 typ = 'string'
             else:
-                exitMessage(ec.INVALID_XML, "Invalid argument type")
+                exitMessage(ec.INVALID_XML, "Invalid XML things")
 
             try:
                 frame, name = self.args[0].value.split('@', 1)
@@ -1118,7 +1152,7 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invalid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _write(self, instruction):
         self.args = instruction.args
@@ -1146,7 +1180,7 @@ class Run:
                 print(self.args[0].value, end='')
         
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
 
     def _concat(self, instruction):
@@ -1222,7 +1256,7 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invalid frame")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _strlen(self, instruction):
         self.args = instruction.args
@@ -1340,8 +1374,6 @@ class Run:
                 exitMessage(ec.INVALID_FRAME, "Insdsdvalid frame")
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invalid frame")
-            # except TypeError:
-            #     exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
         else:
             exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
 
@@ -1365,10 +1397,8 @@ class Run:
                     else:
                         exitMessage(ec.INVALID_XML, "Invalid frame")
                     if typ == type(None):
-                        print("tady ne ze\n")
                         exitMessage(ec.MISSING_VALUE, "Invalid argument type")
                     elif typ != 'int':
-                        print("ti\n")
                         exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
                 except IndexError:
                     exitMessage(ec.INVALID_FRAME, "Invalid frame")
@@ -1486,14 +1516,14 @@ class Run:
             except AttributeError:
                 exitMessage(ec.INVALID_FRAME, "Invalid frameERROR")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _label(self, instruction):
         self.args = instruction.args
         if self.args[0].type == 'label':
             pass
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _jump(self, instruction):
         self.args = instruction.args
@@ -1569,7 +1599,7 @@ class Run:
                     except KeyError:
                         exitMessage(ec.SEMANTIC_ERROR, "Missing label")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
 
     def _jumpifneq(self, instruction):
@@ -1638,7 +1668,7 @@ class Run:
                     except KeyError:
                         exitMessage(ec.SEMANTIC_ERROR, "Missing label")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
 
     def _exit(self, instruction):
         self.args = instruction.args
@@ -1668,7 +1698,7 @@ class Run:
             
             exitMessage(ec.INVALID_OPERAND_TYPE, "Invalid argument type")
         else:
-            exitMessage(ec.INVALID_XML, "Invalid argument type")
+            exitMessage(ec.INVALID_XML, "Invalid XML things")
             
 
     def _dprint(self, instruction):

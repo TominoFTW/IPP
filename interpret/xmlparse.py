@@ -93,30 +93,28 @@ class Parse:
                     exitMessage(ec.INVALID_XML, "Invalid number of arguments")
             
             """Distribution of arguments"""
-            if len(arg1) == 1:
-                arg1 = arg1[0]
-                if len(arg2) == 1:
-                    arg2 = arg2[0]
-                    if len(arg3) == 1:
-                        arg3 = arg3[0]
-                        try:
-                            self.instructions.append([i, ins.attrib['opcode'],
-                                                      arg1.attrib['type'], arg1.text.strip() if not arg1.text is None else None,
-                                                      arg2.attrib['type'], arg2.text.strip() if not arg2.text is None else None,
-                                                      arg3.attrib['type'], arg3.text.strip() if not arg3.text is None else None])
-                        except:
-                            print(i, ins.attrib['opcode'], arg1.attrib['type'])
-                            # print(xml)
-                            # exitMessage(ec.INVALID_XML)
+            try:
+                if len(arg1) == 1:
+                    arg1 = arg1[0]
+                    if len(arg2) == 1:
+                        arg2 = arg2[0]
+                        if len(arg3) == 1:
+                            arg3 = arg3[0]
+                            self.instructions.append([i, ins.attrib['opcode'].upper(),
+                                                        arg1.attrib['type'], arg1.text.strip() if not arg1.text is None else None,
+                                                        arg2.attrib['type'], arg2.text.strip() if not arg2.text is None else None,
+                                                        arg3.attrib['type'], arg3.text.strip() if not arg3.text is None else None])
+                        else:
+                            self.instructions.append([i, ins.attrib['opcode'].upper(),
+                                                        arg1.attrib['type'], arg1.text.strip() if not arg1.text is None else None,
+                                                        arg2.attrib['type'], arg2.text.strip() if not arg2.text is None else None])
                     else:
-                        self.instructions.append([i, ins.attrib['opcode'],
-                                                  arg1.attrib['type'], arg1.text.strip() if not arg1.text is None else None,
-                                                  arg2.attrib['type'], arg2.text.strip() if not arg2.text is None else None])
+                        self.instructions.append([i, ins.attrib['opcode'].upper(),
+                                                    arg1.attrib['type'], arg1.text.strip() if not arg1.text is None else None])
                 else:
-                    self.instructions.append([i, ins.attrib['opcode'],
-                                              arg1.attrib['type'], arg1.text.strip() if not arg1.text is None else None])
-            else:
-                self.instructions.append([i, ins.attrib['opcode']])
+                    self.instructions.append([i, ins.attrib['opcode'].upper()])
+            except:
+                exitMessage(ec.INVALID_XML)
 
         return self.instructions
 

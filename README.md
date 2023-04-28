@@ -5,5 +5,5 @@
 - 1/1 dokumentace
 
 ### interpret.py
--
--
+- TBD/8 implementace
+- TBD/4 dokumentace

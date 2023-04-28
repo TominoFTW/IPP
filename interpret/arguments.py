@@ -55,15 +55,16 @@ class parseArguments:
         elif self.args.source is None and self.args.input is None:
             exitMessage(ec.MISSING_ARGUMENT,
                         "At least one of the arguments --source or --input is required")
-            
+
         else:
             try:
                 self.args.source = open(self.args.source, 'r')
                 self.args.input = open(self.args.input, 'r')
             except FileNotFoundError:
                 exitMessage(ec.INPUT_FILE_ERROR, "Input file error")
-        
+
         return self.args
+
 
 if __name__ == '__main__':
     parseArguments()
